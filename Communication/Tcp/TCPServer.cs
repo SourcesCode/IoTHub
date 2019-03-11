@@ -113,13 +113,18 @@ namespace Communication.Tcp
             }
         }
 
+        public bool Start()
+        {
+            return Start(1024);
+        }
+
         /// <summary>
         /// 按照给定的端口号开启服务器
         /// </summary>
         /// <param name="backlog">The maximum length of the pending connections queue.</param>
-        public void Start(int backlog)
+        public bool Start(int backlog)
         {
-            if (Active) return;
+            if (Active) return false;
             if (Server == null)
             {
                 Server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -131,18 +136,20 @@ namespace Communication.Tcp
             //开始第一次接受客户端连接
             Server.BeginAccept(new AsyncCallback(OnAccept), null);
             Active = true;
+            return true;
         }
 
         /// <summary>
         /// 关闭服务器
         /// </summary>
-        public void Stop()
+        public bool Stop()
         {
-            if (!Active) return;
-            if (Server == null) return;
+            if (!Active) return false;
+            if (Server == null) return false;
             Server.Close();
             Server = null;
             Active = false;
+            return true;
         }
 
         /// <summary>
@@ -174,6 +181,7 @@ namespace Communication.Tcp
 
             }
         }
+
         /// <summary>
         /// 接收数据回调方法
         /// </summary>
@@ -247,6 +255,7 @@ namespace Communication.Tcp
 
             end.Socket.Send(buffer2send);  //同步
         }
+
         /// <summary>
         /// 给指定终端异步发送数据
         /// </summary>
@@ -266,5 +275,6 @@ namespace Communication.Tcp
 
             end.Socket.BeginSend(buffer2send, 0, buffer2send.Length, SocketFlags.None, callback, end);  //异步
         }
+
     }
 }
