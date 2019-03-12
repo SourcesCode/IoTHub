@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Communication.Core
 {
-    public interface IUdpClientListener : IClientListener
+    public interface IUdpClientListener : IClientListener<IUdpClient>
     {
     }
 }

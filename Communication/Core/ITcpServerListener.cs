@@ -4,8 +4,8 @@ using System.Text;
 
 namespace Communication.Core
 {
-    public interface ITcpServerListener: IServerListener
+    public interface ITcpServerListener : IServerListener<ITcpServer>
     {
-      
+
     }
 }

@@ -7,9 +7,6 @@ namespace Communication.Core
 {
     public interface ISocket
     {
-        //EndPoint LocalEndPoint { get; set; }
-        //EndPoint RemoteEndPoint { get; set; }
-        bool Close();
         bool Send(int connId, byte[] buffer, int offset, int size);
         bool Receive(int connId, byte[] buffer, int offset, int size);
         bool Disconnect(int connId, bool isForce);

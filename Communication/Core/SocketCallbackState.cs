@@ -7,7 +7,8 @@ namespace Communication.Core
 {
     public class SocketCallbackState
     {
-        private Socket _socket;  //负责通信的Socket
-        private byte[] _buffer = new byte[1024];  //接收数据系统缓冲区
+        public int ConnId { get; set; }
+        public Socket Socket { get; set; }  //负责通信的Socket
+        public byte[] Buffer { get; set; }  //接收数据系统缓冲区
     }
 }

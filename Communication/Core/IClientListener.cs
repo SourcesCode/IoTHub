@@ -5,17 +5,18 @@ using System.Text;
 
 namespace Communication.Core
 {
-    public interface IClientListener : ISocketListener
+    public interface IClientListener<in T> : ISocketListener<T> where T : IClient
     {
         /// <summary>
         /// 准备建立连接
         /// 准备建立连接前触发
         /// </summary>
-        event Func<int, EventResult> OnPrepareConnect;
+        EventResult OnPrepareConnect(T sender, int connId, Socket socket);
         /// <summary>
         /// 成功建立连接
         /// 成功建立连接后触发
         /// </summary>
-        event Func<int, EventResult> OnConnected;
+        EventResult OnConnected(T sender, int connId);
+
     }
 }
