@@ -12,7 +12,7 @@ namespace Communication.Tcp
     /// <summary>
     /// TCP通信服务器
     /// </summary>
-    public class TcpServer
+    public class TcpServerOld
     {
         private int _localPort = 0;
         public EndPoint LocalEndpoint { get; private set; }
@@ -23,17 +23,17 @@ namespace Communication.Tcp
         /// <summary>
         /// 服务器状态
         /// </summary>
-        protected bool Active { get; private set; }
+        public bool Active { get; private set; }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static TcpServer Create(int port)
+        public static TcpServerOld Create(int port)
         {
 
-            return new TcpServer();
+            return new TcpServerOld();
         }
 
 
@@ -46,7 +46,7 @@ namespace Communication.Tcp
         /// <summary>
         /// 服务器列表
         /// </summary>
-        public static Dictionary<string, TcpServer> TCPServers { get; private set; }
+        public static Dictionary<string, TcpServerOld> TCPServers { get; private set; }
 
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Communication.Tcp
         /// 在心跳检测发现断线时激发该事件
         /// </summary>
         public event Action<TCPClientDisConnected4PulseEventArgs> TCPClientDisConnected4Pulse;
-        public TcpServer()
+        public TcpServerOld()
         {
 
         }
@@ -78,9 +78,9 @@ namespace Communication.Tcp
         /// 构造方法
         /// </summary>
         /// <param name="server_id">服务器ID</param>
-        public TcpServer(string server_id)
+        public TcpServerOld(string server_id)
         {
-            TCPServers = new Dictionary<string, TcpServer>();
+            TCPServers = new Dictionary<string, TcpServerOld>();
             _server_id = server_id;
             _pulse_test.DoWork += new DoWorkEventHandler(_pulse_test_DoWork);
             _pulse_test.RunWorkerAsync();

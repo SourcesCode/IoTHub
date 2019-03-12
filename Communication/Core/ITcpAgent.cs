@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Communication.Core
 {
-    interface ITcpAgent : IAgent
+    public interface ITcpAgent : IAgent
     {
     }
 }

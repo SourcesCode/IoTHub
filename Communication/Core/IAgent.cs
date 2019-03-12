@@ -4,7 +4,11 @@ using System.Text;
 
 namespace Communication.Core
 {
-    interface IAgent
+    public interface IAgent : ISocket
     {
+        bool Start();
+        bool Stop();
+        bool Connect(int connId);
+
     }
 }

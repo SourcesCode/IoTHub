@@ -22,9 +22,9 @@ namespace Communication.Tcp
         public TCPServerManager(string server_id)
         {
             _server_id = server_id;
-            if (!TcpServer.TCPServers.ContainsKey(server_id))
+            if (!TcpServerOld.TCPServers.ContainsKey(server_id))
             {
-                TcpServer.TCPServers.Add(server_id, new TcpServer(server_id));
+                TcpServerOld.TCPServers.Add(server_id, new TcpServerOld(server_id));
             }
         }
         /// <summary>
@@ -33,14 +33,14 @@ namespace Communication.Tcp
         /// <param name="port">侦听端口号</param>
         public void Start(int port)
         {
-            TcpServer.TCPServers[_server_id].Start(port);
+            TcpServerOld.TCPServers[_server_id].Start(port);
         }
         /// <summary>
         /// 关闭服务器，只结束侦听
         /// </summary>
         public void Stop()
         {
-            TcpServer.TCPServers[_server_id].Stop();
+            TcpServerOld.TCPServers[_server_id].Stop();
         }
         /// <summary>
         /// 向指定终端同步发送数据
@@ -50,7 +50,7 @@ namespace Communication.Tcp
         /// <param name="end">指定终端</param>
         public void Send(Msg msg, byte[] data, TCPEndPoint end)
         {
-            TcpServer.TCPServers[_server_id].Send(msg, data, end);
+            TcpServerOld.TCPServers[_server_id].Send(msg, data, end);
         }
         /// <summary>
         /// 向指定终端异步发送数据
@@ -61,7 +61,7 @@ namespace Communication.Tcp
         /// <param name="callback">回调方法</param>
         public void SendAsync(Msg msg, byte[] data, TCPEndPoint end, AsyncCallback callback)
         {
-            TcpServer.TCPServers[_server_id].SendAsync(msg, data, end, callback);
+            TcpServerOld.TCPServers[_server_id].SendAsync(msg, data, end, callback);
         }
 
         /// <summary>
@@ -71,11 +71,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TcpServer.TCPServers[_server_id].TCPMessageReceived += value;
+                TcpServerOld.TCPServers[_server_id].TCPMessageReceived += value;
             }
             remove
             {
-                TcpServer.TCPServers[_server_id].TCPMessageReceived -= value;
+                TcpServerOld.TCPServers[_server_id].TCPMessageReceived -= value;
             }
         }
         /// <summary>
@@ -85,11 +85,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TcpServer.TCPServers[_server_id].TCPClientConnected += value;
+                TcpServerOld.TCPServers[_server_id].TCPClientConnected += value;
             }
             remove
             {
-                TcpServer.TCPServers[_server_id].TCPClientConnected -= value;
+                TcpServerOld.TCPServers[_server_id].TCPClientConnected -= value;
             }
         }
         /// <summary>
@@ -99,11 +99,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TcpServer.TCPServers[_server_id].TCPClientDisConnected += value;
+                TcpServerOld.TCPServers[_server_id].TCPClientDisConnected += value;
             }
             remove
             {
-                TcpServer.TCPServers[_server_id].TCPClientDisConnected -= value;
+                TcpServerOld.TCPServers[_server_id].TCPClientDisConnected -= value;
             }
         }
         /// <summary>
@@ -113,11 +113,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TcpServer.TCPServers[_server_id].TCPClientDisConnected4Pulse += value;
+                TcpServerOld.TCPServers[_server_id].TCPClientDisConnected4Pulse += value;
             }
             remove
             {
-                TcpServer.TCPServers[_server_id].TCPClientDisConnected4Pulse -= value;
+                TcpServerOld.TCPServers[_server_id].TCPClientDisConnected4Pulse -= value;
             }
         }
 
@@ -128,7 +128,7 @@ namespace Communication.Tcp
         {
             get
             {
-                return TcpServer.TCPServers[_server_id].Active;
+                return TcpServerOld.TCPServers[_server_id].Active;
             }
         }
         /// <summary>
@@ -138,11 +138,11 @@ namespace Communication.Tcp
         {
             get
             {
-                return TcpServer.TCPServers[_server_id].Pulse;
+                return TcpServerOld.TCPServers[_server_id].Pulse;
             }
             set
             {
-                TcpServer.TCPServers[_server_id].Pulse = value;
+                TcpServerOld.TCPServers[_server_id].Pulse = value;
             }
         }
         /// <summary>
@@ -152,7 +152,7 @@ namespace Communication.Tcp
         /// <returns></returns>
         public static bool ServerExist(string server_id)
         {
-            return TcpServer.TCPServers.ContainsKey(server_id);
+            return TcpServerOld.TCPServers.ContainsKey(server_id);
         }
     }
 }

@@ -4,9 +4,11 @@ using System.Text;
 
 namespace Communication.Core
 {
-    public interface IServer
+    public interface IServer : ISocket
     {
         bool Start();
+
         bool Stop();
+
     }
 }

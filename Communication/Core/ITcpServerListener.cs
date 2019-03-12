@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Communication.Core
 {
-    public interface ITcpServerListener: ISocketListener
+    public interface ITcpServerListener: IServerListener
     {
       
     }
