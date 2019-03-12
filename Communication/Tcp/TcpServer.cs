@@ -6,30 +6,40 @@ using System.Net;
 
 namespace Communication.Tcp
 {
-    public class TcpClient : ITcpClient
+    public class TcpServer : ITcpServer
     {
-        private readonly ITcpClientListener _listener;
-        public TcpClient(ITcpClientListener listener)
+        private readonly ITcpServerListener _listener;
+        public TcpServer(ITcpServerListener listener)
         {
             _listener = listener;
         }
+        public bool Close()
+        {
 
-        public bool Connect()
+            throw new NotImplementedException();
+        }
+
+        public bool Disconnect(int connId, bool isForce)
         {
             throw new NotImplementedException();
         }
 
-        public int GetConnectionID()
+        public int[] GetAllConnectionIDs()
         {
             throw new NotImplementedException();
         }
 
-        public EndPoint GetLocalEndPoint()
+        public bool GetConnectionCount()
         {
             throw new NotImplementedException();
         }
 
-        public EndPoint GetRemoteEndPoint()
+        public EndPoint GetLocalEndPoint(int connId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EndPoint GetRemoteEndPoint(int connId)
         {
             throw new NotImplementedException();
         }
@@ -39,7 +49,12 @@ namespace Communication.Tcp
             throw new NotImplementedException();
         }
 
-        public bool Send(byte[] buffer, int offset, int size)
+        public bool Receive(int connId, byte[] buffer, int offset, int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Send(int connId, byte[] buffer, int offset, int size)
         {
             throw new NotImplementedException();
         }

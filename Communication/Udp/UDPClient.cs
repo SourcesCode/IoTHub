@@ -1,139 +1,56 @@
-﻿using System;
+﻿using Communication.Core;
+using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Text;
 using System.Net;
-using System.Net.Sockets;
 
 namespace Communication.Udp
 {
-    /// <summary>
-    /// 说明：
-    /// UDP通信客户端
-    /// 信息：
-    /// 周智 2015.07.20
-    /// </summary>
-    public class UDPClient
+    public class UdpClient : IUdpClient
     {
-        private Socket _socket;  //客户端socket
-        private string _client_id;  //客户端ID
-
-        EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0); //远程终端信息
-
-        byte[] _buffer4recv = new byte[1024 * 64];  //数据接收系统缓冲区
-
-        /// <summary>
-        /// 客户端工作状态
-        /// </summary>
-        public bool Runing
+        private readonly IUdpClientListener _listener;
+        public UdpClient(IUdpClientListener listener)
         {
-            get;
-            set;
+            _listener = listener;
+        }
+        public bool Connect()
+        {
+            throw new NotImplementedException();
         }
 
-        private static Dictionary<string, UDPClient> _udpClients;
-        /// <summary>
-        /// 客户端列表
-        /// </summary>
-        public static Dictionary<string, UDPClient> UDPClients
+        public int GetConnectionID()
         {
-            get
-            {
-                if (_udpClients == null)
-                {
-                    _udpClients = new Dictionary<string, UDPClient>();
-                }
-                return _udpClients;
-            }
+            throw new NotImplementedException();
         }
-        /// <summary>
-        /// 构造方法
-        /// </summary>
-        /// <param name="client_id">客户端ID</param>
-        public UDPClient(string client_id)
+
+        public EndPoint GetLocalEndPoint()
         {
-            _client_id = client_id;
+            throw new NotImplementedException();
         }
-        /// <summary>
-        /// 开启UDP监听
-        /// </summary>
-        /// <param name="port">监听端口号</param>
-        public void Start(int port)
+
+        public EndPoint GetRemoteEndPoint()
         {
-            if (!Runing)
-            {
-                if (_socket == null)
-                {
-                    _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                }
-                string ip = Helper.GetLocalIpV4Helper();
-                _socket.Bind(new IPEndPoint(IPAddress.Parse(ip), port));
-                _socket.BeginReceiveFrom(_buffer4recv, 0, 1024 * 64, SocketFlags.None, ref remoteEndPoint, new AsyncCallback(OnReceive), remoteEndPoint);
-                Runing = true;
-            }
+            throw new NotImplementedException();
         }
-        /// <summary>
-        /// 数据接收回调方法
-        /// </summary>
-        /// <param name="ar">回调参数</param>
-        private void OnReceive(IAsyncResult ar)
+
+        public bool IsConnected()
         {
-            try
-            {
-                int real_recv = _socket.EndReceiveFrom(ar, ref remoteEndPoint);
-                if (real_recv >= 1)
-                {
-
-                    UDPMessageReceivedEventArgs args = new UDPMessageReceivedEventArgs();
-                    args.CsID = _client_id;
-                    args.Msg = (Msg)_buffer4recv[0];
-                    args.RemoteIP = (remoteEndPoint as IPEndPoint).Address.ToString();
-                    args.RemotePort = (remoteEndPoint as IPEndPoint).Port;
-                    args.Time = DateTime.Now;
-                    args.Data = new byte[real_recv - 1];
-                    Buffer.BlockCopy(_buffer4recv, 1, args.Data, 0, real_recv - 1);
-                    UDPMessageReceived?.Invoke(args);
-
-                }
-                _socket.BeginReceiveFrom(_buffer4recv, 0, 1024 * 64, SocketFlags.None, ref remoteEndPoint, new AsyncCallback(OnReceive), remoteEndPoint);
-            }
-            catch
-            {
-
-            }
+            throw new NotImplementedException();
         }
-        /// <summary>
-        /// 接收到消息时激发该事件
-        /// </summary>
-        public event Action<UDPMessageReceivedEventArgs> UDPMessageReceived;
-        /// <summary>
-        /// 同步发送数据
-        /// </summary>
-        /// <param name="msg">消息类型</param>
-        /// <param name="data">数据正文</param>
-        /// <param name="remoteIP">远程IP</param>
-        /// <param name="remotePort">远程端口</param>
-        public void SendTo(Msg msg, byte[] data, string remoteIP, int remotePort)
+
+        public bool Send(byte[] buffer, int offset, int size)
         {
-            byte[] buffer2send = new byte[1 + data.Length];  // 1  + data
-            BinaryWriter sWriter = new BinaryWriter(new MemoryStream(buffer2send));
-
-            sWriter.Write((byte)msg);
-            sWriter.Write(data);
-            sWriter.Close();
-
-            _socket.SendTo(buffer2send, new IPEndPoint(IPAddress.Parse(remoteIP), remotePort));  //同步发送数据
+            throw new NotImplementedException();
         }
-        /// <summary>
-        /// 停止监听端口
-        /// </summary>
-        public void Stop()
+
+        public bool Start()
         {
-            if (Runing)
-            {
-                _socket.Close();
-                _socket = null;
-                Runing = false;
-            }
+            throw new NotImplementedException();
+        }
+
+        public bool Stop()
+        {
+            throw new NotImplementedException();
         }
     }
 }

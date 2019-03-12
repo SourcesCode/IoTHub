@@ -21,9 +21,9 @@ namespace Communication.Udp
         public UDPClientManager(string client_id)
         {
             _client_id = client_id;
-            if (!UDPClient.UDPClients.ContainsKey(_client_id))
+            if (!UDPClientOld.UDPClients.ContainsKey(_client_id))
             {
-                UDPClient.UDPClients.Add(_client_id, new UDPClient(_client_id));
+                UDPClientOld.UDPClients.Add(_client_id, new UDPClientOld(_client_id));
             }
         }
 
@@ -33,7 +33,7 @@ namespace Communication.Udp
         /// <param name="port">监听端口号</param>
         public void Start(int port)
         {
-            UDPClient.UDPClients[_client_id].Start(port);
+            UDPClientOld.UDPClients[_client_id].Start(port);
         }
         /// <summary>
         /// 接收到消息时激发该事件
@@ -42,11 +42,11 @@ namespace Communication.Udp
         {
             add
             {
-                UDPClient.UDPClients[_client_id].UDPMessageReceived += value;
+                UDPClientOld.UDPClients[_client_id].UDPMessageReceived += value;
             }
             remove
             {
-                UDPClient.UDPClients[_client_id].UDPMessageReceived -= value;
+                UDPClientOld.UDPClients[_client_id].UDPMessageReceived -= value;
             }
         }
         /// <summary>
@@ -56,7 +56,7 @@ namespace Communication.Udp
         /// <returns></returns>
         public static bool ClientExist(string client_id)
         {
-            return UDPClient.UDPClients.ContainsKey(client_id);
+            return UDPClientOld.UDPClients.ContainsKey(client_id);
         }
         /// <summary>
         /// 同步发送数据
@@ -67,7 +67,7 @@ namespace Communication.Udp
         /// <param name="remotePort">远程端口</param>
         public void SendTo(Msg msg, byte[] data, string remoteIP, int remotePort)
         {
-            UDPClient.UDPClients[_client_id].SendTo(msg, data, remoteIP, remotePort);
+            UDPClientOld.UDPClients[_client_id].SendTo(msg, data, remoteIP, remotePort);
         }
         /// <summary>
         /// 客户端端口监听状态
@@ -76,7 +76,7 @@ namespace Communication.Udp
         {
             get
             {
-                return UDPClient.UDPClients[_client_id].Runing;
+                return UDPClientOld.UDPClients[_client_id].Runing;
             }
         }
         /// <summary>
@@ -84,7 +84,7 @@ namespace Communication.Udp
         /// </summary>
         public void Stop()
         {
-            UDPClient.UDPClients[_client_id].Stop();
+            UDPClientOld.UDPClients[_client_id].Stop();
         }
     }
 }
