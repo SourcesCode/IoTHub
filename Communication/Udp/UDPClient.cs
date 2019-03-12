@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Net;
+using System.Net.Sockets;
 
 namespace Communication.Udp
 {
@@ -13,7 +14,18 @@ namespace Communication.Udp
         {
             _listener = listener;
         }
-        public bool Connect()
+
+        public int ReceiveBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public int SendBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public bool Connected { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public Socket Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public bool Connect(string remoteIp, int remotePort)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Disconnect()
         {
             throw new NotImplementedException();
         }
@@ -33,22 +45,7 @@ namespace Communication.Udp
             throw new NotImplementedException();
         }
 
-        public bool IsConnected()
-        {
-            throw new NotImplementedException();
-        }
-
         public bool Send(byte[] buffer, int offset, int size)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Start()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Stop()
         {
             throw new NotImplementedException();
         }

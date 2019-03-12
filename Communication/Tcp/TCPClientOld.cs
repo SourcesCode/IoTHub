@@ -16,7 +16,7 @@ namespace Communication.Tcp
     /// 信息：
     /// 周智 2015.07.20
     /// </summary>
-    class TCPClientOld
+    class TCPClient
     {
         private Socket _socket;  //客户端socket
         private string _client_id;  //客户端ID
@@ -39,17 +39,17 @@ namespace Communication.Tcp
             }
         }
 
-        private static Dictionary<string, TCPClientOld> _tcpClients;
+        private static Dictionary<string, TCPClient> _tcpClients;
         /// <summary>
         /// 客户端列表
         /// </summary>
-        public static Dictionary<string, TCPClientOld> TCPClients
+        public static Dictionary<string, TCPClient> TCPClients
         {
             get
             {
                 if (_tcpClients == null)
                 {
-                    _tcpClients = new Dictionary<string, TCPClientOld>();
+                    _tcpClients = new Dictionary<string, TCPClient>();
                 }
                 return _tcpClients;
             }
@@ -84,7 +84,7 @@ namespace Communication.Tcp
         /// 构造方法
         /// </summary>
         /// <param name="client_id">客户端ID</param>
-        public TCPClientOld(string client_id)
+        public TCPClient(string client_id)
         {
             _client_id = client_id;
             _pulse_test.DoWork += new DoWorkEventHandler(_pulse_test_DoWork);

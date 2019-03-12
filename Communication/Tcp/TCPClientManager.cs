@@ -22,9 +22,9 @@ namespace Communication.Tcp
         public TCPClientManager(string client_id)
         {
             _client_id = client_id;
-            if (!TCPClientOld.TCPClients.ContainsKey(_client_id))
+            if (!TCPClient.TCPClients.ContainsKey(_client_id))
             {
-                TCPClientOld.TCPClients.Add(_client_id, new TCPClientOld(_client_id));
+                TCPClient.TCPClients.Add(_client_id, new TCPClient(_client_id));
             }
         }
         /// <summary>
@@ -34,7 +34,7 @@ namespace Communication.Tcp
         {
             get
             {
-                return TCPClientOld.TCPClients[_client_id].Connected;
+                return TCPClient.TCPClients[_client_id].Connected;
             }
         }
         /// <summary>
@@ -44,11 +44,11 @@ namespace Communication.Tcp
         {
             get
             {
-                return TCPClientOld.TCPClients[_client_id].Pulse;
+                return TCPClient.TCPClients[_client_id].Pulse;
             }
             set
             {
-                TCPClientOld.TCPClients[_client_id].Pulse = value;
+                TCPClient.TCPClients[_client_id].Pulse = value;
             }
         }
         /// <summary>
@@ -58,7 +58,7 @@ namespace Communication.Tcp
         /// <returns></returns>
         public static bool ClientExist(string client_id)
         {
-            return TCPClientOld.TCPClients.ContainsKey(client_id);
+            return TCPClient.TCPClients.ContainsKey(client_id);
         }
 
         /// <summary>
@@ -68,14 +68,14 @@ namespace Communication.Tcp
         /// <param name="port">服务器端口</param>
         public void Connect(string ip, int port)
         {
-            TCPClientOld.TCPClients[_client_id].Connect(ip, port);
+            TCPClient.TCPClients[_client_id].Connect(ip, port);
         }
         /// <summary>
         /// 断开服务器
         /// </summary>
         public void DisConnect()
         {
-            TCPClientOld.TCPClients[_client_id].DisConnect();
+            TCPClient.TCPClients[_client_id].DisConnect();
         }
         /// <summary>
         /// 向服务器同步发送数据
@@ -84,7 +84,7 @@ namespace Communication.Tcp
         /// <param name="data">消息数据正文</param>
         public void Send(Msg msg, byte[] data)
         {
-            TCPClientOld.TCPClients[_client_id].Send(msg, data);
+            TCPClient.TCPClients[_client_id].Send(msg, data);
         }
         /// <summary>
         /// 向服务器异步发送数据
@@ -94,7 +94,7 @@ namespace Communication.Tcp
         /// <param name="callback">回调方法</param>
         public void SendAsync(Msg msg, byte[] data, AsyncCallback callback)
         {
-            TCPClientOld.TCPClients[_client_id].SendAsync(msg, data, callback);
+            TCPClient.TCPClients[_client_id].SendAsync(msg, data, callback);
         }
 
         /// <summary>
@@ -104,11 +104,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TCPClientOld.TCPClients[_client_id].TCPMessageReceived += value;
+                TCPClient.TCPClients[_client_id].TCPMessageReceived += value;
             }
             remove
             {
-                TCPClientOld.TCPClients[_client_id].TCPMessageReceived -= value;
+                TCPClient.TCPClients[_client_id].TCPMessageReceived -= value;
             }
         }
         /// <summary>
@@ -118,11 +118,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TCPClientOld.TCPClients[_client_id].TCPClientConnected += value;
+                TCPClient.TCPClients[_client_id].TCPClientConnected += value;
             }
             remove
             {
-                TCPClientOld.TCPClients[_client_id].TCPClientConnected -= value;
+                TCPClient.TCPClients[_client_id].TCPClientConnected -= value;
             }
         }
         /// <summary>
@@ -132,11 +132,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TCPClientOld.TCPClients[_client_id].TCPClientDisConnected += value;
+                TCPClient.TCPClients[_client_id].TCPClientDisConnected += value;
             }
             remove
             {
-                TCPClientOld.TCPClients[_client_id].TCPClientDisConnected -= value;
+                TCPClient.TCPClients[_client_id].TCPClientDisConnected -= value;
             }
         }
         /// <summary>
@@ -146,11 +146,11 @@ namespace Communication.Tcp
         {
             add
             {
-                TCPClientOld.TCPClients[_client_id].TCPClientDisConnected4Pulse += value;
+                TCPClient.TCPClients[_client_id].TCPClientDisConnected4Pulse += value;
             }
             remove
             {
-                TCPClientOld.TCPClients[_client_id].TCPClientDisConnected4Pulse -= value;
+                TCPClient.TCPClients[_client_id].TCPClientDisConnected4Pulse -= value;
             }
         }
     }
