@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+﻿using System.Net;
 
 namespace Communication.Core
 {
@@ -20,7 +17,7 @@ namespace Communication.Core
         /// 获取连接数
         /// </summary>
         /// <returns></returns>
-        bool GetConnectionCount();
+        int GetConnectionCount();
         /// <summary>
         /// 获取所有连接的 CONNID
         /// </summary>

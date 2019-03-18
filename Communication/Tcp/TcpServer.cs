@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Net;
+using System.Net.Sockets;
 
 namespace Communication.Tcp
 {
@@ -11,13 +12,24 @@ namespace Communication.Tcp
         private readonly ITcpServerListener _listener;
         public TcpServer(ITcpServerListener listener)
         {
-            _listener = listener;
+            //OnPrepareConnect += listener.OnPrepareConnect;
+            //OnConnected += listener.OnConnected;
+            OnHandShake += listener.OnHandShake;
+            OnAccept += listener.OnAccept;
+            OnSend += listener.OnSend;
+            OnReceive += listener.OnReceive;
+            OnDisconnected += listener.OnDisconnected;
+            OnShutdown += listener.OnShutdown;
         }
-        public bool Close()
-        {
 
-            throw new NotImplementedException();
-        }
+        //public event Func<TcpServer, int, Socket, EventResult> OnPrepareConnect;
+        //public event Func<TcpServer, int, EventResult> OnConnected;
+        public event Func<TcpServer, int, EventResult> OnHandShake;
+        public event Func<TcpServer, int, Socket, EventResult> OnAccept;
+        public event Func<TcpServer, int, byte[], int, int, EventResult> OnSend;
+        public event Func<TcpServer, int, byte[], int, int, EventResult> OnReceive;
+        public event Func<TcpServer, int, EventResult> OnDisconnected;
+        public event Func<TcpServer, EventResult> OnShutdown;
 
         public bool Disconnect(int connId, bool isForce)
         {
@@ -29,7 +41,7 @@ namespace Communication.Tcp
             throw new NotImplementedException();
         }
 
-        public bool GetConnectionCount()
+        public int GetConnectionCount()
         {
             throw new NotImplementedException();
         }

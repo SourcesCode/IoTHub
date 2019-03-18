@@ -6,6 +6,5 @@ namespace Communication.Core
 {
     public interface ITcpServerListener : IServerListener<ITcpServer>
     {
-
     }
 }

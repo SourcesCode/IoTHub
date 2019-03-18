@@ -16,7 +16,8 @@ namespace Communication.Tcp
 
         public TcpClient(ITcpClientListener listener)
         {
-            var sss = new System.Net.Sockets.TcpClient();
+            var sss = new System.Net.Sockets.TcpListener(new IPAddress(1111), 1111);
+            var ccc = new System.Net.Sockets.TcpClient();
 
             _listener = listener;
             OnPrepareConnect += listener.OnPrepareConnect;
