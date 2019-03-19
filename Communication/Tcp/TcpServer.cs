@@ -9,22 +9,50 @@ namespace Communication.Tcp
 {
     public class TcpServer : ITcpServer
     {
-        private readonly ITcpServerListener _listener;
-        public TcpServer(ITcpServerListener listener)
+        /// <summary>
+        /// 本地端口号
+        /// </summary>
+        private int _localPort = 0;
+        /// <summary>
+        /// The maximum length of the pending connections queue.
+        /// 挂起连接队列的最大长度。
+        /// </summary>
+        private int backlog = 1024;
+        public EndPoint LocalEndpoint { get; private set; }
+        /// <summary>
+        /// 服务端监听socket
+        /// </summary>
+        public Socket Server { get; private set; }
+        /// <summary>
+        /// 服务器状态
+        /// </summary>
+        protected bool Active { get; private set; }
+
+        private Dictionary<int, Socket> _clientConnections { get; set; }
+        private int _connId = 0;
+        private int _socketBufferSize = 0;
+
+        public TcpServer(int port)
         {
-            //OnPrepareConnect += listener.OnPrepareConnect;
-            //OnConnected += listener.OnConnected;
-            OnHandShake += listener.OnHandShake;
-            OnAccept += listener.OnAccept;
-            OnSend += listener.OnSend;
-            OnReceive += listener.OnReceive;
-            OnDisconnected += listener.OnDisconnected;
-            OnShutdown += listener.OnShutdown;
+            _localPort = port;
+            _socketBufferSize = 1024;
+        }
+
+        /// <summary>
+        /// Creates a new TcpServer instance to listen on the specified port.
+        /// </summary>
+        /// <param name="port"></param>
+        /// <returns></returns>
+        public static TcpServer Create(int port)
+        {
+            return new TcpServer(port);
         }
 
         //public event Func<TcpServer, int, Socket, EventResult> OnPrepareConnect;
         //public event Func<TcpServer, int, EventResult> OnConnected;
-        public event Func<TcpServer, int, EventResult> OnHandShake;
+
+        public event Func<TcpServer, Socket, EventResult> OnStarted;
+        //public event Func<TcpServer, int, EventResult> OnHandShake;
         public event Func<TcpServer, int, Socket, EventResult> OnAccept;
         public event Func<TcpServer, int, byte[], int, int, EventResult> OnSend;
         public event Func<TcpServer, int, byte[], int, int, EventResult> OnReceive;
@@ -71,14 +99,138 @@ namespace Communication.Tcp
             throw new NotImplementedException();
         }
 
-        public bool Start()
+        public bool SetHeartBeatInterval(int second)
         {
             throw new NotImplementedException();
         }
 
-        public bool Stop()
+        public bool SetMaxConnectionCount(int count)
         {
             throw new NotImplementedException();
         }
+
+        public bool SetSocketBufferSize(int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SetSocketListenQueueLength(int length)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SetWorkerThreadCount(int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Start()
+        {
+            if (Active) return false;
+            if (Server == null)
+            {
+                Server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            }
+            string ip = Helper.GetLocalIpV4Helper();
+            LocalEndpoint = new IPEndPoint(IPAddress.Parse(ip), _localPort);
+            Server.Bind(LocalEndpoint);
+            Server.Listen(backlog);
+            //开始第一次接受客户端连接
+            Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
+            Active = true;
+
+            OnStarted?.Invoke(this, Server);
+            return true;
+        }
+
+        /// <summary>
+        /// 客户端连入回调方法
+        /// </summary>
+        /// <param name="ar"></param>
+        private void AcceptAsyncCallback(IAsyncResult ar)
+        {
+            try
+            {
+                Socket client = Server.EndAccept(ar);
+                _connId++;
+                _clientConnections.Add(_connId, client);
+
+                //TCPEndPoint end = new TCPEndPoint();
+                //end.Socket = client;
+                //end.UID = _connId++;
+
+                SocketCallbackState socketCallbackState = new SocketCallbackState
+                {
+                    ConnId = _connId,
+                    Socket = client,
+                    Buffer = new byte[_socketBufferSize]
+                };
+
+                //开始第一次数据接收
+                client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
+                    new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
+                //开始接受下一次客户端连接
+                Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
+                //_pulse_time.TryAdd(end.UID, Pulse); //加入心跳检测
+
+                //TCPClientConnectedEventArgs args = new TCPClientConnectedEventArgs();
+                //args.CsID = _server_id;
+                //args.End = end;
+                //args.Time = DateTime.Now;
+                ////通知新客户端连入
+                //TCPClientConnected?.Invoke(args);
+
+                OnAccept?.Invoke(this, _connId, client);
+            }
+            catch
+            {
+
+            }
+        }
+        /// <summary>
+        /// 接收数据回调方法
+        /// </summary>
+        /// <param name="ar">回调参数</param>
+        private void ReceiveAsyncCallback(IAsyncResult ar)
+        {
+            var currentState = ar.AsyncState as SocketCallbackState;
+            try
+            {
+                int real_recv = currentState.Socket.EndReceive(ar);
+
+                //写入消息缓冲区
+                byte[] receiveBuffer = currentState.Write(0, real_recv);
+
+                //激发事件，通知事件注册者处理消息
+                OnReceive?.BeginInvoke(this, currentState.ConnId, receiveBuffer, 0, receiveBuffer.Length, null, null);
+
+                //开始下一次数据接收
+                currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
+                    new AsyncCallback(ReceiveAsyncCallback), currentState);
+            }
+            catch
+            {
+                //TCPClientDisConnectedEventArgs args = new TCPClientDisConnectedEventArgs();
+                //args.CsID = _server_id;
+                //args.End = currentState;
+                //args.Time = DateTime.Now;
+                //通知客户端断开
+                //TCPClientDisConnected?.Invoke(args);
+                OnDisconnected?.Invoke(this, currentState.ConnId);
+                //int tmp;
+                //_pulse_time.TryRemove(currentState.UID, out tmp);
+            }
+        }
+
+        public bool Stop()
+        {
+            if (!Active) return false;
+            if (Server == null) return false;
+            Server.Close();
+            Server = null;
+            Active = false;
+            return true;
+        }
+
     }
 }

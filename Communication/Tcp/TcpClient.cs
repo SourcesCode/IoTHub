@@ -4,31 +4,18 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
-using Communication.Tcp.EventArgs;
 using System.IO;
 
 namespace Communication.Tcp
 {
     public class TcpClient : ITcpClient
     {
-        private readonly ITcpClientListener _listener;
         private readonly int _connId = 0;
 
-        public TcpClient(ITcpClientListener listener)
+        public TcpClient()
         {
             var sss = new System.Net.Sockets.TcpListener(new IPAddress(1111), 1111);
             var ccc = new System.Net.Sockets.TcpClient();
-
-            _listener = listener;
-            OnPrepareConnect += listener.OnPrepareConnect;
-            OnConnected += listener.OnConnected;
-            OnHandShake += listener.OnHandShake;
-            OnAccept += listener.OnAccept;
-            OnSend += listener.OnSend;
-            OnReceive += listener.OnReceive;
-            OnDisconnected += listener.OnDisconnected;
-            OnShutdown += listener.OnShutdown;
-
 
             ReceiveBufferSize = 1024;
             SendBufferSize = 1024;
@@ -67,7 +54,7 @@ namespace Communication.Tcp
             EventResult? onConnectedResult = OnConnected?.Invoke(this, _connId);
             if (onConnectedResult.HasValue && onConnectedResult == EventResult.Error)
             {
-                Disconnect();
+                Disconnect(1, true);
             }
 
             SocketCallbackState socketCallbackState = new SocketCallbackState
@@ -103,12 +90,12 @@ namespace Communication.Tcp
             }
             catch
             {
-                Disconnect();
+                Disconnect(1, true);
             }
         }
 
 
-        public bool Disconnect()
+        public bool Disconnect(int connId, bool isForce)
         {
             if (!Connected) return false;
             if (Client == null) return false;
@@ -132,7 +119,7 @@ namespace Communication.Tcp
             return _remoteEP;
         }
 
-        public bool Send(byte[] buffer, int offset, int size)
+        public bool Send(int connId, byte[] buffer, int offset, int size)
         {
             byte[] buffer2send = new byte[size];  // 1 + 4 + data
             BinaryWriter sWriter = new BinaryWriter(new MemoryStream(buffer2send));
