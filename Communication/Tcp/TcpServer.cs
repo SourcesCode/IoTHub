@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Linq;
 
 namespace Communication.Tcp
 {
@@ -30,12 +31,12 @@ namespace Communication.Tcp
 
         private Dictionary<int, Socket> _clientConnections { get; set; }
         private int _connId = 0;
-        private int _socketBufferSize = 0;
+        private int _receiveBufferSize = 0;
 
         public TcpServer(int port)
         {
             _localPort = port;
-            _socketBufferSize = 1024;
+            _receiveBufferSize = 1024;
         }
 
         /// <summary>
@@ -61,17 +62,27 @@ namespace Communication.Tcp
 
         public bool Disconnect(int connId, bool isForce)
         {
-            throw new NotImplementedException();
+            if (!Active)
+                throw new InvalidProgramException("This TCP Scoket server has not been started.");
+
+            Socket client = _clientConnections[connId];
+            if (client == null)
+                throw new ArgumentNullException("client");
+            _clientConnections.Remove(connId);
+
+            client.Disconnect(true);
+
+            return true;
         }
 
         public int[] GetAllConnectionIDs()
         {
-            throw new NotImplementedException();
+            return _clientConnections.Keys.ToArray();
         }
 
         public int GetConnectionCount()
         {
-            throw new NotImplementedException();
+            return _clientConnections.Count;
         }
 
         public EndPoint GetLocalEndPoint(int connId)
@@ -91,12 +102,31 @@ namespace Communication.Tcp
 
         public bool Receive(int connId, byte[] buffer, int offset, int size)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public bool Send(int connId, byte[] buffer, int offset, int size)
         {
-            throw new NotImplementedException();
+            if (!Active)
+                throw new InvalidProgramException("This TCP Scoket server has not been started.");
+
+            Socket client = _clientConnections[connId];
+            if (client == null)
+                throw new ArgumentNullException("client");
+
+            if (buffer == null)
+                throw new ArgumentNullException("data");
+
+
+            client.BeginSend(buffer, offset, size, SocketFlags.None,
+                new AsyncCallback(SendAsyncCallback), client);
+
+            return true;
+        }
+
+        private void SendAsyncCallback(IAsyncResult ar)
+        {
+            ((Socket)ar.AsyncState).EndSend(ar);
         }
 
         public bool SetHeartBeatInterval(int second)
@@ -136,7 +166,7 @@ namespace Communication.Tcp
             Server.Bind(LocalEndpoint);
             Server.Listen(backlog);
             //开始第一次接受客户端连接
-            Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
+            Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), Server);
             Active = true;
 
             OnStarted?.Invoke(this, Server);
@@ -151,7 +181,8 @@ namespace Communication.Tcp
         {
             try
             {
-                Socket client = Server.EndAccept(ar);
+                Socket server = (Socket)ar.AsyncState;
+                Socket client = server.EndAccept(ar);
                 _connId++;
                 _clientConnections.Add(_connId, client);
 
@@ -163,14 +194,14 @@ namespace Communication.Tcp
                 {
                     ConnId = _connId,
                     Socket = client,
-                    Buffer = new byte[_socketBufferSize]
+                    Buffer = new byte[_receiveBufferSize]
                 };
 
                 //开始第一次数据接收
                 client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
                     new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
                 //开始接受下一次客户端连接
-                Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
+                server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), ar.AsyncState);
                 //_pulse_time.TryAdd(end.UID, Pulse); //加入心跳检测
 
                 //TCPClientConnectedEventArgs args = new TCPClientConnectedEventArgs();
@@ -187,28 +218,30 @@ namespace Communication.Tcp
 
             }
         }
+
         /// <summary>
         /// 接收数据回调方法
         /// </summary>
         /// <param name="ar">回调参数</param>
         private void ReceiveAsyncCallback(IAsyncResult ar)
         {
+
+            if (!Active)
+                throw new InvalidProgramException("This TCP Scoket server has not been started.");
+
             var currentState = ar.AsyncState as SocketCallbackState;
+            int numberOfReadBytes = 0;
             try
             {
-                int real_recv = currentState.Socket.EndReceive(ar);
-
-                //写入消息缓冲区
-                byte[] receiveBuffer = currentState.Write(0, real_recv);
-
-                //激发事件，通知事件注册者处理消息
-                OnReceive?.BeginInvoke(this, currentState.ConnId, receiveBuffer, 0, receiveBuffer.Length, null, null);
-
-                //开始下一次数据接收
-                currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
-                    new AsyncCallback(ReceiveAsyncCallback), currentState);
+                //如果两次开始了异步的接收,所以当客户端退出的时候
+                //会两次执行EndReceive
+                numberOfReadBytes = currentState.Socket.EndReceive(ar);
             }
             catch
+            {
+                numberOfReadBytes = 0;
+            }
+            if (numberOfReadBytes == 0)
             {
                 //TCPClientDisConnectedEventArgs args = new TCPClientDisConnectedEventArgs();
                 //args.CsID = _server_id;
@@ -219,13 +252,32 @@ namespace Communication.Tcp
                 OnDisconnected?.Invoke(this, currentState.ConnId);
                 //int tmp;
                 //_pulse_time.TryRemove(currentState.UID, out tmp);
+                return;
             }
+
+            //写入消息缓冲区
+            byte[] receiveBuffer = currentState.Write(0, numberOfReadBytes);
+
+            //激发事件，通知事件注册者处理消息
+            OnReceive?.BeginInvoke(this, currentState.ConnId, receiveBuffer, 0, receiveBuffer.Length, null, null);
+
+            //开始下一次数据接收
+            currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
+                new AsyncCallback(ReceiveAsyncCallback), ar.AsyncState);
+            //TODO 处理已经读取的数据 ps:数据在session的RecvDataBuffer中
+            //RaiseDataReceived(session);
+            //TODO 触发数据接收事件
+
+
         }
 
         public bool Stop()
         {
             if (!Active) return false;
             if (Server == null) return false;
+            //关闭数据的接受和发送
+            Server.Shutdown(SocketShutdown.Both);
+            //清理资源
             Server.Close();
             Server = null;
             Active = false;
