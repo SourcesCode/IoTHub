@@ -5,7 +5,7 @@ namespace Communication.Core
     public interface ISocket
     {
         bool Send(int connId, byte[] buffer, int offset, int size);
-        bool Receive(int connId, byte[] buffer, int offset, int size);
+        //bool Receive(int connId, byte[] buffer, int offset, int size);
         bool Disconnect(int connId, bool isForce);
 
         /// <summary>

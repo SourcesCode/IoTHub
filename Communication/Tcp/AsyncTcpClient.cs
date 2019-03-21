@@ -8,46 +8,45 @@ using System.IO;
 
 namespace Communication.Tcp
 {
-    public class TcpClient : ITcpClient
+    public class AsyncTcpClient : ITcpClient
     {
         private readonly int _connId = 0;
 
-        public TcpClient()
+        public AsyncTcpClient()
         {
             var sss = new System.Net.Sockets.TcpListener(new IPAddress(1111), 1111);
             var ccc = new System.Net.Sockets.TcpClient();
 
-            ReceiveBufferSize = 1024;
-            SendBufferSize = 1024;
+            MaxBufferSize = 1024;
         }
 
-        public int ReceiveBufferSize { get; set; }
-        public int SendBufferSize { get; set; }
+        public int MaxBufferSize { get; set; }
+
         public bool Connected { get; set; }
         public Socket Client { get; set; }
 
         private IPEndPoint _remoteEP = null;
         private IPEndPoint _localEP = null;
 
-        public event Func<TcpClient, int, Socket, EventResult> OnPrepareConnect;
-        public event Func<TcpClient, int, EventResult> OnConnected;
-        public event Func<TcpClient, int, EventResult> OnHandShake;
-        public event Func<TcpClient, int, Socket, EventResult> OnAccept;
-        public event Func<TcpClient, int, byte[], int, int, EventResult> OnSend;
-        public event Func<TcpClient, int, byte[], int, int, EventResult> OnReceive;
-        public event Func<TcpClient, int, EventResult> OnDisconnected;
-        public event Func<TcpClient, EventResult> OnShutdown;
+        //public event Func<AsyncTcpClient, int, Socket, EventResult> OnPrepareConnect;
+        public event Func<AsyncTcpClient, int, EventResult> OnConnected;
+        //public event Func<AsyncTcpClient, int, EventResult> OnHandShake;
+        //public event Func<AsyncTcpClient, int, Socket, EventResult> OnAccept;
+        public event Func<AsyncTcpClient, int, byte[], int, int, EventResult> OnSend;
+        public event Func<AsyncTcpClient, int, byte[], int, int, EventResult> OnReceive;
+        public event Func<AsyncTcpClient, int, EventResult> OnDisconnected;
+        //public event Func<AsyncTcpClient, EventResult> OnShutdown;
 
 
         public bool Connect(string remoteIp, int remotePort)
         {
-            if (Connected) return true;
+            if (Connected) return false;
             if (Client == null)
             {
                 Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
             _remoteEP = new IPEndPoint(IPAddress.Parse(remoteIp), remotePort);
-            EventResult? onPrepareConnectResult = OnPrepareConnect?.Invoke(this, _connId, Client);
+            //EventResult? onPrepareConnectResult = OnPrepareConnect?.Invoke(this, _connId, Client);
             Client.Connect(_remoteEP);
             Connected = true;
 
@@ -61,9 +60,10 @@ namespace Communication.Tcp
             {
                 ConnId = _connId,
                 Socket = Client,
-                Buffer = new byte[ReceiveBufferSize]
+                Buffer = new byte[MaxBufferSize]
             };
-            Client.BeginReceive(socketCallbackState.Buffer, 0, ReceiveBufferSize, SocketFlags.None, new AsyncCallback(BeginReceiveCallback), socketCallbackState);
+            Client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
+                new AsyncCallback(BeginReceiveCallback), socketCallbackState);
 
             return true;
         }
@@ -74,19 +74,19 @@ namespace Communication.Tcp
         /// <param name="ar"></param>
         private void BeginReceiveCallback(IAsyncResult ar)
         {
-            SocketCallbackState socketCallbackState = ar.AsyncState as SocketCallbackState;
+            SocketCallbackState currentState = ar.AsyncState as SocketCallbackState;
             try
             {
-                int real_recv = socketCallbackState.Socket.EndReceive(ar);
-                //激发事件，通知事件注册者处理消息
-                //TCPMessageReceived?.BeginInvoke(args, null, null);
-                EventResult? result = OnReceive?.Invoke(this,
-                    socketCallbackState.ConnId,
-                    socketCallbackState.Buffer,
-                    0,
-                    real_recv);
+                int numberOfReadBytes = currentState.Socket.EndReceive(ar);
 
-                socketCallbackState.Socket.BeginReceive(socketCallbackState.Buffer, 0, ReceiveBufferSize, SocketFlags.None, new AsyncCallback(BeginReceiveCallback), socketCallbackState);
+                byte[] receiveBuffer = currentState.Read(0, numberOfReadBytes);
+                //激发事件，通知事件注册者处理消息
+
+                OnReceive?.BeginInvoke(this, currentState.ConnId,
+                    receiveBuffer, 0, receiveBuffer.Length, null, null);
+
+                currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
+                    new AsyncCallback(BeginReceiveCallback), ar.AsyncState);
             }
             catch
             {
@@ -94,12 +94,14 @@ namespace Communication.Tcp
             }
         }
 
-
         public bool Disconnect(int connId, bool isForce)
         {
             if (!Connected) return false;
             if (Client == null) return false;
+            Client.Shutdown(SocketShutdown.Both);
             Client.Close();
+            Connected = false;
+            //通知客户端断开
             OnDisconnected(this, _connId);
             return true;
         }
@@ -121,16 +123,8 @@ namespace Communication.Tcp
 
         public bool Send(int connId, byte[] buffer, int offset, int size)
         {
-            byte[] buffer2send = new byte[size];  // 1 + 4 + data
-            BinaryWriter sWriter = new BinaryWriter(new MemoryStream(buffer2send));
-
-            //sWriter.Write((byte)msg);
-            //sWriter.Write(data.Length);
-            sWriter.Write(buffer, offset, size);
-            sWriter.Close();
-
-            int sendCount = Client.Send(buffer2send);  //同步
-
+            //同步
+            int sendCount = Client.Send(buffer, offset, size, SocketFlags.None);
             return sendCount == size;
         }
 

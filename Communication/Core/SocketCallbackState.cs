@@ -16,7 +16,7 @@ namespace Communication.Core
         /// </summary>
         /// <param name="offset">写入字节流的开始位置</param>
         /// <param name="size">写入字节大小</param>
-        public byte[] Write(int offset, int size)
+        public byte[] Read(int offset, int size)
         {
             int length = size - offset;
             byte[] receiveBuffer = new byte[size];

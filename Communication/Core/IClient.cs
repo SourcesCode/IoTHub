@@ -38,8 +38,8 @@ namespace Communication.Core
         bool Disconnect(int connId, bool isForce);
 
 
-        int ReceiveBufferSize { get; set; }
-        int SendBufferSize { get; set; }
+        int MaxBufferSize { get; set; }
+
         /// <summary>
         /// 检测是否有效连接
         /// </summary>

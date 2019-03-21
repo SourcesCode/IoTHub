@@ -17,8 +17,8 @@ namespace Communication.Udp
             _listener = listener;
         }
 
-        public int ReceiveBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int SendBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public int MaxBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public int MaxBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public bool Connected { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public Socket Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -57,7 +57,7 @@ namespace Communication.Udp
             {
                 //ConnId = _connId,
                 Socket = client,
-                Buffer = new byte[ReceiveBufferSize]
+                Buffer = new byte[MaxBufferSize]
             };
 
             client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
@@ -103,7 +103,7 @@ namespace Communication.Udp
             }
 
             //写入消息缓冲区
-            byte[] receiveBuffer = currentState.Write(0, numberOfReadBytes);
+            byte[] receiveBuffer = currentState.Read(0, numberOfReadBytes);
 
             //激发事件，通知事件注册者处理消息
             OnReceive?.BeginInvoke(this, currentState.ConnId, receiveBuffer, 0, receiveBuffer.Length, null, null);

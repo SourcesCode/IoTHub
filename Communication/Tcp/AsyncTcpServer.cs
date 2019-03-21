@@ -5,10 +5,11 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Linq;
+using System.Collections.Concurrent;
 
 namespace Communication.Tcp
 {
-    public class TcpServer : ITcpServer
+    public class AsyncTcpServer : ITcpServer
     {
         /// <summary>
         /// 本地端口号
@@ -29,11 +30,11 @@ namespace Communication.Tcp
         /// </summary>
         protected bool Active { get; private set; }
 
-        private Dictionary<int, Socket> _clientConnections { get; set; }
+        private ConcurrentDictionary<int, Socket> _clientConnections { get; set; }
         private int _connId = 0;
         private int _receiveBufferSize = 0;
 
-        public TcpServer(int port)
+        public AsyncTcpServer(int port)
         {
             _localPort = port;
             _receiveBufferSize = 1024;
@@ -44,21 +45,21 @@ namespace Communication.Tcp
         /// </summary>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static TcpServer Create(int port)
+        public static AsyncTcpServer Create(int port)
         {
-            return new TcpServer(port);
+            return new AsyncTcpServer(port);
         }
 
         //public event Func<TcpServer, int, Socket, EventResult> OnPrepareConnect;
         //public event Func<TcpServer, int, EventResult> OnConnected;
 
-        public event Func<TcpServer, Socket, EventResult> OnStarted;
+        public event Func<AsyncTcpServer, Socket, EventResult> OnStarted;
         //public event Func<TcpServer, int, EventResult> OnHandShake;
-        public event Func<TcpServer, int, Socket, EventResult> OnAccept;
-        public event Func<TcpServer, int, byte[], int, int, EventResult> OnSend;
-        public event Func<TcpServer, int, byte[], int, int, EventResult> OnReceive;
-        public event Func<TcpServer, int, EventResult> OnDisconnected;
-        public event Func<TcpServer, EventResult> OnShutdown;
+        public event Func<AsyncTcpServer, int, Socket, EventResult> OnConnected;
+        public event Func<AsyncTcpServer, int, byte[], int, int, EventResult> OnSend;
+        public event Func<AsyncTcpServer, int, byte[], int, int, EventResult> OnReceive;
+        public event Func<AsyncTcpServer, int, EventResult> OnDisconnected;
+        public event Func<AsyncTcpServer, EventResult> OnStoped;
 
         public bool Disconnect(int connId, bool isForce)
         {
@@ -68,7 +69,7 @@ namespace Communication.Tcp
             Socket client = _clientConnections[connId];
             if (client == null)
                 throw new ArgumentNullException("client");
-            _clientConnections.Remove(connId);
+            _clientConnections.TryRemove(connId, out _);
 
             client.Disconnect(true);
 
@@ -100,11 +101,6 @@ namespace Communication.Tcp
             throw new NotImplementedException();
         }
 
-        public bool Receive(int connId, byte[] buffer, int offset, int size)
-        {
-            return false;
-        }
-
         public bool Send(int connId, byte[] buffer, int offset, int size)
         {
             if (!Active)
@@ -126,7 +122,7 @@ namespace Communication.Tcp
 
         private void SendAsyncCallback(IAsyncResult ar)
         {
-            ((Socket)ar.AsyncState).EndSend(ar);
+            ((Socket)ar.AsyncState)?.EndSend(ar);
         }
 
         public bool SetHeartBeatInterval(int second)
@@ -161,12 +157,13 @@ namespace Communication.Tcp
             {
                 Server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
-            string ip = Helper.GetLocalIpV4Helper();
-            LocalEndpoint = new IPEndPoint(IPAddress.Parse(ip), _localPort);
+            //string ip = Helper.GetLocalIpV4Helper();
+            IPAddress ip = IPAddress.Any;
+            LocalEndpoint = new IPEndPoint(ip, _localPort);
             Server.Bind(LocalEndpoint);
             Server.Listen(backlog);
             //开始第一次接受客户端连接
-            Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), Server);
+            Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
             Active = true;
 
             OnStarted?.Invoke(this, Server);
@@ -181,27 +178,27 @@ namespace Communication.Tcp
         {
             try
             {
-                Socket server = (Socket)ar.AsyncState;
-                Socket client = server.EndAccept(ar);
-                _connId++;
-                _clientConnections.Add(_connId, client);
+                Socket client = Server.EndAccept(ar);
+
+                SocketCallbackState socketCallbackState = new SocketCallbackState
+                {
+                    ConnId = _connId++,
+                    Socket = client,
+                    Buffer = new byte[_receiveBufferSize]
+                };
+
+                _clientConnections.TryAdd(socketCallbackState.ConnId, client);
 
                 //TCPEndPoint end = new TCPEndPoint();
                 //end.Socket = client;
                 //end.UID = _connId++;
 
-                SocketCallbackState socketCallbackState = new SocketCallbackState
-                {
-                    ConnId = _connId,
-                    Socket = client,
-                    Buffer = new byte[_receiveBufferSize]
-                };
 
                 //开始第一次数据接收
                 client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
                     new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
                 //开始接受下一次客户端连接
-                server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), ar.AsyncState);
+                Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
                 //_pulse_time.TryAdd(end.UID, Pulse); //加入心跳检测
 
                 //TCPClientConnectedEventArgs args = new TCPClientConnectedEventArgs();
@@ -211,7 +208,7 @@ namespace Communication.Tcp
                 ////通知新客户端连入
                 //TCPClientConnected?.Invoke(args);
 
-                OnAccept?.Invoke(this, _connId, client);
+                OnConnected?.Invoke(this, socketCallbackState.ConnId, client);
             }
             catch
             {
@@ -252,14 +249,16 @@ namespace Communication.Tcp
                 OnDisconnected?.Invoke(this, currentState.ConnId);
                 //int tmp;
                 //_pulse_time.TryRemove(currentState.UID, out tmp);
+                _clientConnections.TryRemove(currentState.ConnId, out _);
                 return;
             }
 
             //写入消息缓冲区
-            byte[] receiveBuffer = currentState.Write(0, numberOfReadBytes);
+            byte[] receiveBuffer = currentState.Read(0, numberOfReadBytes);
 
             //激发事件，通知事件注册者处理消息
-            OnReceive?.BeginInvoke(this, currentState.ConnId, receiveBuffer, 0, receiveBuffer.Length, null, null);
+            OnReceive?.BeginInvoke(this, currentState.ConnId,
+                receiveBuffer, 0, receiveBuffer.Length, null, null);
 
             //开始下一次数据接收
             currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
@@ -267,7 +266,6 @@ namespace Communication.Tcp
             //TODO 处理已经读取的数据 ps:数据在session的RecvDataBuffer中
             //RaiseDataReceived(session);
             //TODO 触发数据接收事件
-
 
         }
 
