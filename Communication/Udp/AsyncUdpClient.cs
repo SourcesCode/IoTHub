@@ -7,40 +7,52 @@ using System.Net.Sockets;
 
 namespace Communication.Udp
 {
-    public class UdpClient : IUdpClient
+    /// <summary>
+    /// 
+    /// </summary>
+    public class AsyncUdpClient : IUdpClient
     {
-        public EndPoint RemoteEndpoint { get; private set; }
-
-        private readonly IUdpClientListener _listener;
-        public UdpClient(IUdpClientListener listener)
+        public AsyncUdpClient()
         {
-            _listener = listener;
+
         }
 
-        public int MaxBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int MaxBufferSize { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public bool Connected { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public Socket Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public EndPoint RemoteEndPoint { get; private set; }
+        public EndPoint LocalEndPoint { get; private set; }
+        public int MaxBufferSize { get; set; }
+        public bool Connected
+        {
+            get
+            {
+                if (Client == null) return false;
+                return Client.Connected;
+            }
+        }
+        public Socket Client { get; set; }
 
         //public event Func<TcpServer, int, Socket, EventResult> OnPrepareConnect;
         //public event Func<TcpServer, int, EventResult> OnConnected;
 
-        public event Func<UdpClient, Socket, EventResult> OnStarted;
+        public event Func<AsyncUdpClient, Socket, EventResult> OnStarted;
         //public event Func<UdpClient, int, EventResult> OnHandShake;
-        public event Func<UdpClient, int, Socket, EventResult> OnAccept;
-        public event Func<UdpClient, int, byte[], int, int, EventResult> OnSend;
-        public event Func<UdpClient, int, byte[], int, int, EventResult> OnReceive;
-        public event Func<UdpClient, int, EventResult> OnDisconnected;
-        public event Func<UdpClient, EventResult> OnShutdown;
+        public event Func<AsyncUdpClient, EventResult> OnConnected;
+        public event Func<AsyncUdpClient, int, byte[], int, int, EventResult> OnSend;
+        public event Func<AsyncUdpClient, int, byte[], int, int, EventResult> OnReceive;
+        public event Func<AsyncUdpClient, EventResult> OnDisconnected;
+        public event Func<AsyncUdpClient, EventResult> OnClose;
 
         public bool Connect(string remoteIp, int remotePort)
         {
-            if (!Connected)
+            if (Connected) return false;
+            if (Client == null)
             {
-                // start the async connect operation
-                Client.BeginConnect(RemoteEndpoint,
-                    new AsyncCallback(ConnectAsyncCallback), Client);
+                Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             }
+            RemoteEndPoint = new IPEndPoint(IPAddress.Parse(remoteIp), remotePort);
+
+            // start the async connect operation
+            Client.BeginConnect(RemoteEndPoint, new AsyncCallback(ConnectAsyncCallback), null);
+
             return true;
         }
 
@@ -49,18 +61,17 @@ namespace Communication.Udp
             if (!Connected)
                 throw new InvalidProgramException("This TCP Scoket server has not been started.");
 
-            Socket client = (Socket)ar.AsyncState;
-            client.EndConnect(ar);
+            Client.EndConnect(ar);
             //RaiseServerConnected(Addresses, Port);
-
+            OnConnected?.Invoke(this);
             SocketCallbackState socketCallbackState = new SocketCallbackState
             {
                 //ConnId = _connId,
-                Socket = client,
+                Socket = Client,
                 Buffer = new byte[MaxBufferSize]
             };
 
-            client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
+            Client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
                 new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
 
         }
@@ -71,7 +82,6 @@ namespace Communication.Udp
         /// <param name="ar">回调参数</param>
         private void ReceiveAsyncCallback(IAsyncResult ar)
         {
-
             if (!Connected)
                 throw new InvalidProgramException("This TCP Scoket server has not been started.");
 
@@ -96,9 +106,10 @@ namespace Communication.Udp
                 //args.Time = DateTime.Now;
                 //通知客户端断开
                 //TCPClientDisConnected?.Invoke(args);
-                OnDisconnected?.Invoke(this, currentState.ConnId);
+                //OnDisconnected?.Invoke(this );
                 //int tmp;
                 //_pulse_time.TryRemove(currentState.UID, out tmp);
+                Disconnect();
                 return;
             }
 
@@ -106,7 +117,8 @@ namespace Communication.Udp
             byte[] receiveBuffer = currentState.Read(0, numberOfReadBytes);
 
             //激发事件，通知事件注册者处理消息
-            OnReceive?.BeginInvoke(this, currentState.ConnId, receiveBuffer, 0, receiveBuffer.Length, null, null);
+            OnReceive?.BeginInvoke(this, currentState.ConnId,
+                receiveBuffer, 0, receiveBuffer.Length, null, null);
 
             //开始下一次数据接收
             currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
@@ -115,55 +127,51 @@ namespace Communication.Udp
             //RaiseDataReceived(session);
             //TODO 触发数据接收事件
 
-
         }
 
-        public bool Disconnect(int connId, bool isForce)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int GetConnectionID()
-        {
-            throw new NotImplementedException();
-        }
-
-        public EndPoint GetLocalEndPoint()
-        {
-            throw new NotImplementedException();
-        }
-
-        public EndPoint GetRemoteEndPoint()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Send(int connId, byte[] buffer, int offset, int size)
+        public bool Send(byte[] buffer, int offset, int size)
         {
             if (!Connected)
             {
-                RaiseServerDisconnected(Addresses, Port);
+                //RaiseServerDisconnected(Addresses, Port);
                 throw new InvalidProgramException(
                   "This client has not connected to server.");
             }
+            //同步
+            int sendCount = Client.Send(buffer, offset, size, SocketFlags.None);
+            OnSend(this, 0, buffer, offset, size);
+            return sendCount == size;
+            //Client.BeginSend(buffer, offset, size, SocketFlags.None,
+            //    new AsyncCallback(SendAsyncCallback), null);
 
-            Socket client = _clientConnections[connId];
-            if (client == null)
-                throw new ArgumentNullException("client");
-
-            if (buffer == null)
-                throw new ArgumentNullException("data");
-
-
-            client.BeginSend(buffer, offset, size, SocketFlags.None,
-                new AsyncCallback(SendAsyncCallback), client);
-
-            return true;
         }
+
         private void SendAsyncCallback(IAsyncResult ar)
         {
             ((Socket)ar.AsyncState).EndSend(ar);
         }
+
+        public bool Disconnect(bool reuseSocket = false)
+        {
+            if (!Connected) return false;
+            if (Client == null) return false;
+            Client.Disconnect(reuseSocket);
+            //通知客户端断开
+            OnDisconnected(this);
+            return true;
+        }
+
+        public bool Close()
+        {
+            if (!Connected) return false;
+            if (Client == null) return false;
+            Disconnect();
+            //Client.Shutdown(SocketShutdown.Both);
+            Client.Close();
+            OnClose?.Invoke(this);
+            return true;
+        }
+
 
     }
 }

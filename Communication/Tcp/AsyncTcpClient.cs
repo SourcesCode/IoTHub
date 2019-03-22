@@ -8,10 +8,11 @@ using System.IO;
 
 namespace Communication.Tcp
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class AsyncTcpClient : ITcpClient
     {
-        private readonly int _connId = 0;
-
         public AsyncTcpClient()
         {
             var sss = new System.Net.Sockets.TcpListener(new IPAddress(1111), 1111);
@@ -20,23 +21,24 @@ namespace Communication.Tcp
             MaxBufferSize = 1024;
         }
 
+        public EndPoint RemoteEndPoint { get; private set; }
+        public EndPoint LocalEndPoint { get; private set; }
         public int MaxBufferSize { get; set; }
-
-        public bool Connected { get; set; }
+        public bool Connected
+        {
+            get
+            {
+                if (Client == null) return false;
+                return Client.Connected;
+            }
+        }
         public Socket Client { get; set; }
 
-        private IPEndPoint _remoteEP = null;
-        private IPEndPoint _localEP = null;
-
-        //public event Func<AsyncTcpClient, int, Socket, EventResult> OnPrepareConnect;
-        public event Func<AsyncTcpClient, int, EventResult> OnConnected;
-        //public event Func<AsyncTcpClient, int, EventResult> OnHandShake;
-        //public event Func<AsyncTcpClient, int, Socket, EventResult> OnAccept;
+        public event Func<AsyncTcpClient, EventResult> OnConnected;
         public event Func<AsyncTcpClient, int, byte[], int, int, EventResult> OnSend;
         public event Func<AsyncTcpClient, int, byte[], int, int, EventResult> OnReceive;
-        public event Func<AsyncTcpClient, int, EventResult> OnDisconnected;
-        //public event Func<AsyncTcpClient, EventResult> OnShutdown;
-
+        public event Func<AsyncTcpClient, EventResult> OnDisconnected;
+        public event Func<AsyncTcpClient, EventResult> OnClose;
 
         public bool Connect(string remoteIp, int remotePort)
         {
@@ -45,25 +47,25 @@ namespace Communication.Tcp
             {
                 Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
-            _remoteEP = new IPEndPoint(IPAddress.Parse(remoteIp), remotePort);
+            RemoteEndPoint = new IPEndPoint(IPAddress.Parse(remoteIp), remotePort);
             //EventResult? onPrepareConnectResult = OnPrepareConnect?.Invoke(this, _connId, Client);
-            Client.Connect(_remoteEP);
-            Connected = true;
+            Client.Connect(RemoteEndPoint);
 
-            EventResult? onConnectedResult = OnConnected?.Invoke(this, _connId);
+            LocalEndPoint = Client.LocalEndPoint;
+            EventResult? onConnectedResult = OnConnected?.Invoke(this);
             if (onConnectedResult.HasValue && onConnectedResult == EventResult.Error)
             {
-                Disconnect(1, true);
+                Disconnect();
             }
 
             SocketCallbackState socketCallbackState = new SocketCallbackState
             {
-                ConnId = _connId,
+                //ConnId = _connId,
                 Socket = Client,
                 Buffer = new byte[MaxBufferSize]
             };
             Client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
-                new AsyncCallback(BeginReceiveCallback), socketCallbackState);
+                new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
 
             return true;
         }
@@ -72,8 +74,9 @@ namespace Communication.Tcp
         /// 接收数据回调方法
         /// </summary>
         /// <param name="ar"></param>
-        private void BeginReceiveCallback(IAsyncResult ar)
+        private void ReceiveAsyncCallback(IAsyncResult ar)
         {
+            if (!Connected) return;
             SocketCallbackState currentState = ar.AsyncState as SocketCallbackState;
             try
             {
@@ -81,51 +84,45 @@ namespace Communication.Tcp
 
                 byte[] receiveBuffer = currentState.Read(0, numberOfReadBytes);
                 //激发事件，通知事件注册者处理消息
-
                 OnReceive?.BeginInvoke(this, currentState.ConnId,
                     receiveBuffer, 0, receiveBuffer.Length, null, null);
 
                 currentState.Socket.BeginReceive(currentState.Buffer, 0, currentState.Buffer.Length, SocketFlags.None,
-                    new AsyncCallback(BeginReceiveCallback), ar.AsyncState);
+                    new AsyncCallback(ReceiveAsyncCallback), ar.AsyncState);
             }
             catch
             {
-                Disconnect(1, true);
+                Disconnect();
             }
         }
 
-        public bool Disconnect(int connId, bool isForce)
-        {
-            if (!Connected) return false;
-            if (Client == null) return false;
-            Client.Shutdown(SocketShutdown.Both);
-            Client.Close();
-            Connected = false;
-            //通知客户端断开
-            OnDisconnected(this, _connId);
-            return true;
-        }
-
-        public int GetConnectionID()
-        {
-            return _connId;
-        }
-
-        public EndPoint GetLocalEndPoint()
-        {
-            return _localEP;
-        }
-
-        public EndPoint GetRemoteEndPoint()
-        {
-            return _remoteEP;
-        }
-
-        public bool Send(int connId, byte[] buffer, int offset, int size)
+        public bool Send(byte[] buffer, int offset, int size)
         {
             //同步
             int sendCount = Client.Send(buffer, offset, size, SocketFlags.None);
+            OnSend(this, 0, buffer, offset, size);
             return sendCount == size;
+        }
+
+        public bool Disconnect(bool reuseSocket = false)
+        {
+            if (!Connected) return false;
+            if (Client == null) return false;
+            Client.Disconnect(reuseSocket);
+            //通知客户端断开
+            OnDisconnected(this);
+            return true;
+        }
+
+        public bool Close()
+        {
+            if (!Connected) return false;
+            if (Client == null) return false;
+            Disconnect();
+            //Client.Shutdown(SocketShutdown.Both);
+            Client.Close();
+            OnClose?.Invoke(this);
+            return true;
         }
 
     }

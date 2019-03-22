@@ -14,10 +14,6 @@ namespace Communication.Udp
         {
             _listener = listener;
         }
-        public bool Close()
-        {
-            throw new NotImplementedException();
-        }
 
         public bool Disconnect(int connId, bool isForce)
         {
@@ -29,7 +25,7 @@ namespace Communication.Udp
             throw new NotImplementedException();
         }
 
-        public bool GetConnectionCount()
+        public int GetConnectionCount()
         {
             throw new NotImplementedException();
         }
@@ -49,12 +45,32 @@ namespace Communication.Udp
             throw new NotImplementedException();
         }
 
-        public bool Receive(int connId, byte[] buffer, int offset, int size)
+        public bool Send(int connId, byte[] buffer, int offset, int size)
         {
             throw new NotImplementedException();
         }
 
-        public bool Send(int connId, byte[] buffer, int offset, int size)
+        public bool SetHeartBeatInterval(int second)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SetMaxConnectionCount(int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SetSocketBufferSize(int size)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SetSocketListenQueueLength(int length)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SetWorkerThreadCount(int count)
         {
             throw new NotImplementedException();
         }
