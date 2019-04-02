@@ -54,6 +54,7 @@ namespace Communication.Udp
             RemoteEndPoint = remoteEP;
             LocalEndPoint = new IPEndPoint(IPAddress.Any, _localPort);
             Client.Bind(LocalEndPoint);
+            IsRuning = true;
 
             EventResult? onConnectedResult = OnConnected?.Invoke(this);
             if (onConnectedResult.HasValue && onConnectedResult == EventResult.Error)
@@ -68,7 +69,6 @@ namespace Communication.Udp
             };
             Client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
                 new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
-            IsRuning = true;
             return true;
         }
         /// <summary>

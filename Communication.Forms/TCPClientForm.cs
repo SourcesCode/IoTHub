@@ -80,10 +80,10 @@ namespace Communication.Forms
             try
             {
                 var flag = asyncTcpClient.Connect(ipAddress, port);
-                //if (flag)
-                //{
-                //    Connected();
-                //}
+                if (flag)
+                {
+                    Connected();
+                }
             }
             catch (Exception ex)
             {
@@ -97,10 +97,10 @@ namespace Communication.Forms
             try
             {
                 var flag = asyncTcpClient.Disconnect();
-                //if (flag)
-                //{
-                //    Disconnected();
-                //}
+                if (flag)
+                {
+                    Disconnected();
+                }
             }
             catch (Exception ex)
             {

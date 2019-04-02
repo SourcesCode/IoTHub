@@ -28,7 +28,7 @@ namespace Communication.Tcp
         /// <summary>
         /// 服务器状态
         /// </summary>
-        public bool IsStarted { get; private set; }
+        public bool IsRuning { get; private set; }
 
         private ConcurrentDictionary<int, Socket> _clientConnections { get; set; }
         private int _connId = 0;
@@ -45,7 +45,7 @@ namespace Communication.Tcp
         {
             _clientConnections = new ConcurrentDictionary<int, Socket>();
             _localPort = port;
-            _receiveBufferSize = 1024;
+            _receiveBufferSize = 1024 * 64;
         }
 
         /// <summary>
@@ -60,19 +60,19 @@ namespace Communication.Tcp
 
         public bool Start()
         {
-            if (IsStarted) return false;
+            if (IsRuning) return false;
             if (Server == null)
             {
                 Server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
             //string ip = Helper.GetLocalIpV4Helper();
-            IPAddress ip = IPAddress.Any;
-            LocalEndpoint = new IPEndPoint(ip, _localPort);
+            IPAddress ipAddress = IPAddress.Any;
+            LocalEndpoint = new IPEndPoint(ipAddress, _localPort);
             Server.Bind(LocalEndpoint);
             Server.Listen(backlog);
             //开始第一次接受客户端连接
             Server.BeginAccept(new AsyncCallback(AcceptAsyncCallback), null);
-            IsStarted = true;
+            IsRuning = true;
             OnStarted?.Invoke(this);
             return true;
         }
@@ -117,7 +117,7 @@ namespace Communication.Tcp
         /// <param name="ar">回调参数</param>
         private void ReceiveAsyncCallback(IAsyncResult ar)
         {
-            if (!IsStarted) return;
+            if (!IsRuning) return;
             var currentState = ar.AsyncState as SocketCallbackState;
             int numberOfReadBytes = 0;
             try
@@ -147,7 +147,7 @@ namespace Communication.Tcp
 
         public bool Stop()
         {
-            if (!IsStarted) return false;
+            if (!IsRuning) return false;
             if (Server == null) return false;
             if (_clientConnections != null && _clientConnections.Count > 0)
             {
@@ -166,14 +166,14 @@ namespace Communication.Tcp
             Server.Close();
             Server?.Dispose();
             Server = null;
-            IsStarted = false;
+            IsRuning = false;
             OnStoped?.Invoke(this);
             return true;
         }
 
         public bool Send(int connId, byte[] buffer)
         {
-            if (Server == null || !IsStarted)
+            if (Server == null || !IsRuning)
             {
                 throw new Exception("尚未启动");
             }
@@ -192,7 +192,7 @@ namespace Communication.Tcp
 
         public bool BeginSend(int connId, byte[] buffer)
         {
-            if (!IsStarted) return false;
+            if (!IsRuning) return false;
             if (buffer == null) return false;
             if (_clientConnections.TryGetValue(connId, out Socket client))
             {
@@ -218,7 +218,7 @@ namespace Communication.Tcp
 
         public bool Disconnect(int connId, bool reuseSocket = false)
         {
-            if (!IsStarted) return false;
+            if (!IsRuning) return false;
             if (_clientConnections.TryGetValue(connId, out Socket client))
             {
                 client.Close();
@@ -251,7 +251,7 @@ namespace Communication.Tcp
 
         public EndPoint GetRemoteEndPoint(int connId)
         {
-            if (!IsStarted) return null;
+            if (!IsRuning) return null;
             if (_clientConnections.TryGetValue(connId, out Socket client))
             {
                 if (client.Connected)

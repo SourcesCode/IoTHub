@@ -6,7 +6,7 @@ namespace Communication.Core
 {
     public interface IServer : ISocket
     {
-        bool IsStarted { get; }
+        bool IsRuning { get; }
         /// <summary>
         /// 启动
         /// </summary>

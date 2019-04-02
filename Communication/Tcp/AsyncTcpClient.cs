@@ -68,6 +68,7 @@ namespace Communication.Tcp
             Client.Connect(remoteEP);
             RemoteEndPoint = remoteEP;
             LocalEndPoint = Client.LocalEndPoint;
+            IsRuning = true;
 
             EventResult? onConnectedResult = OnConnected?.Invoke(this);
             if (onConnectedResult.HasValue && onConnectedResult == EventResult.Error)
@@ -82,7 +83,6 @@ namespace Communication.Tcp
             };
             Client.BeginReceive(socketCallbackState.Buffer, 0, socketCallbackState.Buffer.Length, SocketFlags.None,
                 new AsyncCallback(ReceiveAsyncCallback), socketCallbackState);
-            IsRuning = true;
             return true;
         }
         private void ConnectAsyncCallback(IAsyncResult ar)
