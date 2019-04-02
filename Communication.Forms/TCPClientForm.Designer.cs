@@ -1,6 +1,6 @@
 ﻿namespace Communication.Forms
 {
-    partial class TCPClientForm
+    partial class TcpClientForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,125 +28,141 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.btnClose = new System.Windows.Forms.Button();
+            this.dataReceiveAndSendUC1 = new Communication.Forms.DataReceiveAndSendUC();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.btnSendPicture = new System.Windows.Forms.Button();
-            this.textBox3 = new System.Windows.Forms.TextBox();
-            this.btnSendText = new System.Windows.Forms.Button();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txtPort = new System.Windows.Forms.NumericUpDown();
+            this.label1 = new System.Windows.Forms.Label();
+            this.btnDisconnect = new System.Windows.Forms.Button();
+            this.btnConnect = new System.Windows.Forms.Button();
+            this.txtIpAddress = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.btnStop = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtPort)).BeginInit();
             this.SuspendLayout();
             // 
-            // btnClose
+            // dataReceiveAndSendUC1
             // 
-            this.btnClose.Location = new System.Drawing.Point(391, 306);
-            this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(75, 23);
-            this.btnClose.TabIndex = 12;
-            this.btnClose.Text = "关闭";
-            this.btnClose.UseVisualStyleBackColor = true;
-            this.btnClose.Click += new System.EventHandler(this.BtnClose_Click);
+            this.dataReceiveAndSendUC1.Location = new System.Drawing.Point(12, 81);
+            this.dataReceiveAndSendUC1.Name = "dataReceiveAndSendUC1";
+            this.dataReceiveAndSendUC1.Size = new System.Drawing.Size(530, 390);
+            this.dataReceiveAndSendUC1.TabIndex = 0;
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.btnSendPicture);
-            this.groupBox1.Controls.Add(this.textBox3);
-            this.groupBox1.Controls.Add(this.btnSendText);
-            this.groupBox1.Controls.Add(this.textBox2);
-            this.groupBox1.Location = new System.Drawing.Point(12, 200);
+            this.groupBox1.Controls.Add(this.txtPort);
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.btnDisconnect);
+            this.groupBox1.Controls.Add(this.btnConnect);
+            this.groupBox1.Controls.Add(this.txtIpAddress);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(454, 100);
-            this.groupBox1.TabIndex = 11;
+            this.groupBox1.Size = new System.Drawing.Size(530, 63);
+            this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "发送数据";
+            this.groupBox1.Text = "设置";
             // 
-            // btnSendPicture
+            // txtPort
             // 
-            this.btnSendPicture.Location = new System.Drawing.Point(349, 48);
-            this.btnSendPicture.Name = "btnSendPicture";
-            this.btnSendPicture.Size = new System.Drawing.Size(89, 23);
-            this.btnSendPicture.TabIndex = 6;
-            this.btnSendPicture.Text = "发送图片";
-            this.btnSendPicture.UseVisualStyleBackColor = true;
-            this.btnSendPicture.Click += new System.EventHandler(this.BtnSendPicture_Click);
+            this.txtPort.Location = new System.Drawing.Point(173, 24);
+            this.txtPort.Maximum = new decimal(new int[] {
+            65535,
+            0,
+            0,
+            0});
+            this.txtPort.Name = "txtPort";
+            this.txtPort.Size = new System.Drawing.Size(61, 21);
+            this.txtPort.TabIndex = 31;
+            this.txtPort.Value = new decimal(new int[] {
+            6666,
+            0,
+            0,
+            0});
             // 
-            // textBox3
+            // label1
             // 
-            this.textBox3.Location = new System.Drawing.Point(11, 47);
-            this.textBox3.Name = "textBox3";
-            this.textBox3.ReadOnly = true;
-            this.textBox3.Size = new System.Drawing.Size(332, 21);
-            this.textBox3.TabIndex = 5;
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(132, 26);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(35, 12);
+            this.label1.TabIndex = 30;
+            this.label1.Text = "Port:";
             // 
-            // btnSendText
+            // btnDisconnect
             // 
-            this.btnSendText.Location = new System.Drawing.Point(349, 19);
-            this.btnSendText.Name = "btnSendText";
-            this.btnSendText.Size = new System.Drawing.Size(89, 23);
-            this.btnSendText.TabIndex = 1;
-            this.btnSendText.Text = "发送文本";
-            this.btnSendText.UseVisualStyleBackColor = true;
-            this.btnSendText.Click += new System.EventHandler(this.BtnSendText_Click);
+            this.btnDisconnect.Location = new System.Drawing.Point(321, 21);
+            this.btnDisconnect.Name = "btnDisconnect";
+            this.btnDisconnect.Size = new System.Drawing.Size(75, 23);
+            this.btnDisconnect.TabIndex = 29;
+            this.btnDisconnect.Text = "断开";
+            this.btnDisconnect.UseVisualStyleBackColor = true;
+            this.btnDisconnect.Click += new System.EventHandler(this.btnDisconnect_Click);
             // 
-            // textBox2
+            // btnConnect
             // 
-            this.textBox2.Location = new System.Drawing.Point(11, 20);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(332, 21);
-            this.textBox2.TabIndex = 0;
+            this.btnConnect.Location = new System.Drawing.Point(240, 21);
+            this.btnConnect.Name = "btnConnect";
+            this.btnConnect.Size = new System.Drawing.Size(75, 23);
+            this.btnConnect.TabIndex = 28;
+            this.btnConnect.Text = "连接";
+            this.btnConnect.UseVisualStyleBackColor = true;
+            this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
             // 
-            // pictureBox1
+            // txtIpAddress
             // 
-            this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox1.Location = new System.Drawing.Point(294, 12);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(172, 176);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBox1.TabIndex = 10;
-            this.pictureBox1.TabStop = false;
+            this.txtIpAddress.Location = new System.Drawing.Point(51, 23);
+            this.txtIpAddress.Name = "txtIpAddress";
+            this.txtIpAddress.Size = new System.Drawing.Size(75, 21);
+            this.txtIpAddress.TabIndex = 27;
+            this.txtIpAddress.Text = "127.0.0.1";
             // 
-            // textBox1
+            // label2
             // 
-            this.textBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textBox1.Location = new System.Drawing.Point(12, 12);
-            this.textBox1.Multiline = true;
-            this.textBox1.Name = "textBox1";
-            this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(276, 176);
-            this.textBox1.TabIndex = 9;
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(22, 26);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(23, 12);
+            this.label2.TabIndex = 26;
+            this.label2.Text = "Ip:";
             // 
-            // TCPClientForm
+            // btnStop
+            // 
+            this.btnStop.Location = new System.Drawing.Point(321, 21);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(75, 23);
+            this.btnStop.TabIndex = 29;
+            this.btnStop.Text = "断开";
+            this.btnStop.UseVisualStyleBackColor = true;
+            // 
+            // TcpClientForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(488, 358);
-            this.Controls.Add(this.btnClose);
+            this.ClientSize = new System.Drawing.Size(566, 479);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.pictureBox1);
-            this.Controls.Add(this.textBox1);
-            this.Name = "TCPClientForm";
-            this.Text = "TCPClientForm";
-            this.Load += new System.EventHandler(this.TCPClientForm_Load);
+            this.Controls.Add(this.dataReceiveAndSendUC1);
+            this.Name = "TcpClientForm";
+            this.Text = "TcpClientForm";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.TcpClientForm_FormClosing);
+            this.Load += new System.EventHandler(this.TcpClientForm_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtPort)).EndInit();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
 
-        private System.Windows.Forms.Button btnClose;
+        private DataReceiveAndSendUC dataReceiveAndSendUC1;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.Button btnSendPicture;
-        private System.Windows.Forms.TextBox textBox3;
-        private System.Windows.Forms.Button btnSendText;
-        private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.NumericUpDown txtPort;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button btnDisconnect;
+        private System.Windows.Forms.Button btnConnect;
+        private System.Windows.Forms.TextBox txtIpAddress;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button btnStop;
     }
 }

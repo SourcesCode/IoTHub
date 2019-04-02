@@ -1,142 +1,135 @@
-﻿using Communication.Tcp;
-using Communication.Tcp.EventArgs;
+﻿using Communication.Core;
+using Communication.Tcp;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Communication.Forms
 {
-    public partial class TCPClientForm : Form
+    public partial class TcpClientForm : Form
     {
-        private string _client_id;
-        public TCPClientForm()
+        private AsyncTcpClient asyncTcpClient = null;
+        public TcpClientForm()
         {
             InitializeComponent();
         }
 
-        public TCPClientForm(string client_id)
-            : this()
+        private void TcpClientForm_Load(object sender, EventArgs e)
         {
-            _client_id = client_id;
-        }
-
-        /// <summary>
-        /// 窗体加载
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void TCPClientForm_Load(object sender, EventArgs e)
-        {
-            Text = "TCPClient " + _client_id;
-
-            //注册事件
-            TCPClientManager manager = new TCPClientManager(_client_id); //访问客户端
-            manager.TCPMessageReceived += manager_TCPMessageReceived;
-            manager.TCPClientDisConnected4Pulse += manager_TCPClientDisConnected4Pulse;
-            manager.TCPClientDisConnected += manager_TCPClientDisConnected;
-        }
-
-        /// <summary>
-        /// 发送文本
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnSendText_Click(object sender, EventArgs e)
-        {
-            TCPClientManager manager = new TCPClientManager(_client_id);
-            manager.Send(Msg.Zmsg1, Encoding.Unicode.GetBytes(textBox2.Text)); //同步发送文本
+            this.txtIpAddress.Enabled = true;
+            this.txtPort.Enabled = true;
+            this.btnConnect.Enabled = true;
+            this.btnDisconnect.Enabled = false;
+            asyncTcpClient = new AsyncTcpClient();
+            //asyncTcpClient.OnSend += OnSend;
+            asyncTcpClient.OnReceive += OnReceive;
+            asyncTcpClient.OnConnected += OnConnected;
+            asyncTcpClient.OnDisconnected += OnDisconnected;
+            //asyncTcpClient.OnClose += OnClose;
+            this.dataReceiveAndSendUC1.Send += Send;
 
         }
 
-        /// <summary>
-        /// 发送图片
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnSendPicture_Click(object sender, EventArgs e)
+        private EventResult OnSend(AsyncTcpClient arg1, byte[] buffer, int offset, int size)
         {
-            using (OpenFileDialog ofd = new OpenFileDialog())
+            return EventResult.Ok;
+        }
+        public EventResult OnReceive(AsyncTcpClient sender, byte[] buffer)
+        {
+            //var remoteEndPoint = sender.RemoteEndPoint.ToString();
+            this.dataReceiveAndSendUC1.WriteLog(null, buffer);
+            return EventResult.Ok;
+        }
+        private EventResult OnConnected(AsyncTcpClient sender)
+        {
+            this.dataReceiveAndSendUC1.WriteLog(sender.RemoteEndPoint.ToString(), "已连接");
+            return EventResult.Ok;
+        }
+        private EventResult OnDisconnected(AsyncTcpClient sender)
+        {
+            this.Invoke(new Action(() =>
             {
-                ofd.Filter = "图片文件|*.jpg;*jpeg";
-                if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    textBox3.Text = ofd.FileName;
-                    Image image = Image.FromFile(textBox3.Text);
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        image.Save(ms, ImageFormat.Jpeg);
-
-                        TCPClientManager manager = new TCPClientManager(_client_id);
-                        manager.SendAsync(Msg.Zmsg2, ms.ToArray(), null);  //异步发送图片
-                    }
-                }
+                Disconnected();
+            }));
+            this.dataReceiveAndSendUC1.WriteLog(sender.RemoteEndPoint.ToString(), "已断开");
+            return EventResult.Ok;
+        }
+        public bool Send(byte[] buffer)
+        {
+            //int connId = 0;
+            if (!asyncTcpClient.IsRuning)
+            {
+                this.dataReceiveAndSendUC1.WriteLog(null, "未连接");
+                return false;
             }
+            asyncTcpClient.Send(buffer);
+            return true;
         }
 
-        /// <summary>
-        /// 关闭
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnClose_Click(object sender, EventArgs e)
+        private void btnConnect_Click(object sender, EventArgs e)
         {
-            TCPClientManager manager = new TCPClientManager(_client_id);
-            manager.DisConnect();
-            Close();
+            string ipAddress = txtIpAddress.Text;
+            int port = Convert.ToInt32(txtPort.Value);
+            this.Text = $"{this.Tag} - {ipAddress}:{port}";
+            try
+            {
+                var flag = asyncTcpClient.Connect(ipAddress, port);
+                //if (flag)
+                //{
+                //    Connected();
+                //}
+            }
+            catch (Exception ex)
+            {
+                this.dataReceiveAndSendUC1.WriteLog(null, ex.Message);
+            }
+
+        }
+
+        private void btnDisconnect_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var flag = asyncTcpClient.Disconnect();
+                //if (flag)
+                //{
+                //    Disconnected();
+                //}
+            }
+            catch (Exception ex)
+            {
+                this.dataReceiveAndSendUC1.WriteLog(null, ex.Message);
+            }
+
+        }
+
+        private void TcpClientForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.dataReceiveAndSendUC1.Close();
+        }
+
+        private void Connected()
+        {
+            this.txtIpAddress.Enabled = false;
+            this.txtPort.Enabled = false;
+            this.btnConnect.Enabled = false;
+            this.btnDisconnect.Enabled = true;
+        }
+
+        private void Disconnected()
+        {
+            this.txtIpAddress.Enabled = true;
+            this.txtPort.Enabled = true;
+            this.btnConnect.Enabled = true;
+            this.btnDisconnect.Enabled = false;
         }
 
 
-        #region
-        /// <summary>
-        /// 断线
-        /// </summary>
-        /// <param name="csID"></param>
-        /// <param name="args"></param>
-        void manager_TCPClientDisConnected(TCPClientDisConnectedEventArgs args)
-        {
-            this.Invoke((Action)delegate ()
-            {
-                textBox1.AppendText(args.Time.ToLongTimeString() + " 与服务器断开连接\n");
-            });
-        }
-        /// <summary>
-        /// 心跳包发送失败
-        /// </summary>
-        /// <param name="csID"></param>
-        /// <param name="uid"></param>
-        void manager_TCPClientDisConnected4Pulse(TCPClientDisConnected4PulseEventArgs args)
-        {
-            this.Invoke((Action)delegate ()
-            {
-                textBox1.AppendText("发送心跳包失败\n");
-            });
-        }
-        /// <summary>
-        /// 收到消息
-        /// </summary>
-        /// <param name="csID"></param>
-        /// <param name="args"></param>
-        void manager_TCPMessageReceived(TCPMessageReceivedEventArgs args)
-        {
-            this.Invoke((Action)delegate ()
-            {
-                if (args.Msg == Msg.Zmsg1)  //文本
-                {
-                    textBox1.AppendText(args.Time.ToLongTimeString() + " " + args.End.RemoteIP + ":" + args.End.RemotePort + " 发送文本:\n"
-                        + Encoding.Unicode.GetString(args.Data) + "\n");
-                }
-                if (args.Msg == Msg.Zmsg2)  //图片
-                {
-                    textBox1.AppendText(args.Time.ToLongTimeString() + " " + args.End.RemoteIP + ":" + args.End.RemotePort + " 发送图片:\n"
-                        + "见右方-->\n");
-                    Image image = Image.FromStream(new MemoryStream(args.Data));
-                    pictureBox1.Image = image;
-                }
-            });
-        }
-        #endregion
     }
 }

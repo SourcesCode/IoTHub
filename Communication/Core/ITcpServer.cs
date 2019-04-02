@@ -8,6 +8,5 @@ namespace Communication.Core
     public interface ITcpServer : IServer
     {
 
-
     }
 }

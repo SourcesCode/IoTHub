@@ -4,15 +4,15 @@ namespace Communication.Core
 {
     public interface ISocket
     {
-        bool Send(int connId, byte[] buffer, int offset, int size);
-        //bool Receive(int connId, byte[] buffer, int offset, int size);
-        bool Disconnect(int connId, bool isForce);
-
         /// <summary>
         /// 检测是否有效连接
         /// </summary>
         /// <returns></returns>
-        bool IsConnected();
+        bool IsConnected { get; }
+        bool Send(int connId, byte[] buffer);
+        //bool Receive(int connId, byte[] buffer, int offset, int size);
+        //bool Disconnect(int connId, bool isForce);
+
         /// <summary>
         /// 获取连接数
         /// </summary>
@@ -28,7 +28,7 @@ namespace Communication.Core
         /// </summary>
         /// <param name="connId"></param>
         /// <returns></returns>
-        EndPoint GetLocalEndPoint(int connId);
+        EndPoint GetLocalEndPoint();
         /// <summary>
         /// 获取某个连接的远程地址
         /// </summary>
